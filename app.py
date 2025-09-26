@@ -5,7 +5,6 @@ from typing import List, Dict, Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
-import httpx
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
@@ -86,14 +85,14 @@ def fetch_url(url: str, hl: str, timeout: int = 20) -> Tuple[str, Optional[str]]
     headers = DEFAULT_HEADERS.copy()
     headers["Accept-Language"] = f"{hl},{hl};q=0.8,en;q=0.6"
     try:
-        with httpx.Client(follow_redirects=True, timeout=timeout, headers=headers) as client:
-            r = client.get(url)
-            if r.status_code != 200 or "text/html" not in r.headers.get("content-type", ""):
-                return (url, None)
-            text = extract_main_text(r.text)
-            if len(text) < 300:
-                return (url, None)
-            return (url, text)
+        r = requests.get(url, headers=headers, timeout=timeout, allow_redirects=True)
+        ctype = r.headers.get("content-type", "")
+        if r.status_code != 200 or "text/html" not in ctype:
+            return (url, None)
+        text = extract_main_text(r.text)
+        if len(text) < 300:
+            return (url, None)
+        return (url, text)
     except Exception:
         return (url, None)
 
